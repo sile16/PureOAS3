@@ -9,6 +9,8 @@ import re
 from string import digits
 from pprint import pprint
 import json
+import random
+from datetime import datetime
 
 
 class PdfMinerWrapper(object):
@@ -18,9 +20,10 @@ class PdfMinerWrapper(object):
         for page in doc:
            #do something with the page
     """
-    def __init__(self, pdf_doc, pdf_pwd=""):
+    def __init__(self, pdf_doc, pdf_pwd="",laparams=None):
         self.pdf_doc = pdf_doc
         self.pdf_pwd = pdf_pwd
+        self.laparams = laparams
  
     def __enter__(self):
         #open the pdf file
@@ -36,14 +39,19 @@ class PdfMinerWrapper(object):
     
     def _parse_pages(self):
         rsrcmgr = PDFResourceManager()
-        laparams = LAParams( all_texts = True)
+        if self.laparams == None:
+            laparams = LAParams( all_texts = True)
+        else:
+            laparams=self.laparams
         device = PDFPageAggregator(rsrcmgr, laparams=laparams)
         interpreter = PDFPageInterpreter(rsrcmgr, device)
     
         for page in PDFPage.create_pages(self.doc):
+            
             interpreter.process_page(page)
             # receive the LTPage object for this page
             layout = device.get_result()
+            
             # layout is an LTPage object which may contain child objects like LTTextBox, LTFigure, LTImage, etc.
             yield layout
     def __iter__(self): 
@@ -52,8 +60,8 @@ class PdfMinerWrapper(object):
     def __exit__(self, _type, value, traceback):
         self.fp.close()
             
-def main():
-    with PdfMinerWrapper("REST_API_1.13.pdf") as doc:
+def main(laparams=None):
+    with PdfMinerWrapper("REST_API_1.13.pdf",laparams) as doc:
         
         resource_found = False
         machine = ["f","fd","e","ed",""]
@@ -81,8 +89,12 @@ def main():
         count=0
         for page in doc:     
             #print 'Page no.', page.pageid, 'Size',  (page.height, page.width)
+            if page.pageid == 74:
+                pass
 
+            items=[]
             for tbox in page:
+                
                 if not isinstance(tbox, LTTextBox):
                     continue
                 #print ' '*1, 'Block', 'bbox=(%0.2f, %0.2f, %0.2f, %0.2f)'% tbox.bbox
@@ -99,8 +111,23 @@ def main():
                         #size = str(c.size) #.encode('UTF-8')
                         break
                     
+                    items.append(
+                        {'text':obj.get_text().strip(),
+                        'box':tbox.bbox,
+                        'font':fontname}
+                        )
 
-                    if line.startswith("Resources") and fontname == "Arial,Bold" :
+            sorted_items = pdf_sort(items)
+
+            for row in sorted_items:
+                for item in row['items']:
+
+                    line = item['text']
+                    
+            
+
+
+                    if line.startswith("Resources") and item['font'] == "Arial,Bold" :
                         resource_found = True
                     
                     
@@ -110,7 +137,7 @@ def main():
                         #    break
                         
                         
-                        x_coordinate = tbox.bbox[0]
+                        x_coordinate = item['box'][0]
                         #print line.encode('UTF-8')
                         #print '({}|{}|{}|{})'.format( c.fontname, c.size,type(c.size),tbox.bbox[0])
 
@@ -149,18 +176,18 @@ def main():
                                                     }
                                                 }
 
-                            path_id = ""
-                            if "{" in path:
-                                path_id=path[path.find("{")+1:path.find("}")]
+                            
 
                             param_index=0
                             if method=="get" or method == "delete" or "{" in path:
                                 paths[path][method]['parameters'] = []
                             
-                            if "{" in path:
+                            #Need to create path param for each {id1} .. {id2} in path
+                            
+                            for path_id in re.findall(r'\{(.*?)\}',path):
                                 #adding in special path parameter volume/{volumeid}  example
-                                paths[path][method]['parameters'] = [{"name":path_id,"in":"path","required":True,"schema":{"type":"string"}}]
-                                param_index=1
+                                paths[path][method]['parameters'].append({"name":path_id,"in":"path","required":True,"schema":{"type":"string"}})
+                                param_index += 1
 
                             if not method=="get" and not method=="delete" :
                                 #paths[path][method]['requestBody'] = {'content':{"application/json":{"schema":{"properties":{}}}}}
@@ -185,7 +212,9 @@ def main():
                             #split = line.split()
                             example_name = line
                             #folders[title]['endpoints'][endpoint]['examples'][example_name] = {"description":line,"request":"","response":""}
-                            ###paths[path][method]["responses"]["200"]["content"]["application/json"]["examples"][example_name] = {"request":"","response":""}
+                            if 'examples' not in paths[path][method]["responses"]["200"]["content"]["application/json"]:
+                                paths[path][method]["responses"]["200"]["content"]["application/json"]["examples"]={}
+                            paths[path][method]["responses"]["200"]["content"]["application/json"]["examples"][example_name] = {"request":"","response":""}
                             continue
                         
                         elif line.startswith("Request:"):
@@ -208,7 +237,7 @@ def main():
                             paths[path][method]['description'] += line
 
                         elif state.startswith("parameters"):
-                            if "Bold" in fontname:
+                            if "Bold" in item['font']:
                                 #This is a header, we will ignore these.
                                 continue
 
@@ -231,12 +260,16 @@ def main():
                                         #paths[path][method]['requestBody'] = {'content':{"application/json":{"schema":{"properties":{},"type":"object","required":[]}}}}
                                         paths[path][method]['requestBody']['content']['application/json']['schema']['properties'][param_name] = {"description":""}
                                         
-                                if param_name == "snap":
-                                    i=4
 
                                 state = "parameters_2"
+                                if " " not in line:
+                                    #sometimes the type is concatenated with the param_name, we can detect if there is a space in name.
+                                    continue
+                                else:
+                                    line = line.split(" ",1)[1]
+                                    #now we will roll into param2 parsing.
 
-                            elif state == "parameters_2":
+                            if state == "parameters_2":
                                 #type
                                 if param_name != "None":
                                     #folders[title]['endpoints'][endpoint]['params'][param_name]['type'] = line
@@ -247,8 +280,13 @@ def main():
 
                                 state = "parameters_3"
                                 middle_x = x_coordinate
+                                if  len(line) < 17:
+                                    #means the descirptions was so close the pdf parser grouped it with the type text:
+                                    continue
+                                
 
-                            elif state == "parameters_3":
+
+                            if state == "parameters_3":
                                 if param_name != "None":
                                     if line == "Required.":
                                         #folders[title]['endpoints'][endpoint]['params'][param_name]['required'] = True
@@ -274,15 +312,16 @@ def main():
                                 #folders[title]['endpoints'][endpoint]['examples'][example_name]['url'] = split[1]
                                 #folders[title]['endpoints'][endpoint]['examples'][example_name]['body'] = ""
                                 
-                                ###paths[path][method]["responses"]["200"]["content"]["application/json"]["examples"][example_name]['request'] += line
+                                paths[path][method]["responses"]["200"]["content"]["application/json"]["examples"][example_name]['request'] += line
+                                state="example_request_2"
                                 continue
                                 
                                 #paths[path][method]["responses"]["200"]['examples'][example_name]['request'] += line
-                                state="example_request_2"
+                                
                             else:
                                 #folders[title]['endpoints'][endpoint]['examples'][example_name]['body'] += line
                                 #paths[path][method]["responses"]["200"]['examples'][example_name]['request'] += line
-                                ###paths[path][method]["responses"]["200"]["content"]["application/json"]["examples"][example_name]['request'] += line
+                                paths[path][method]["responses"]["200"]["content"]["application/json"]["examples"][example_name]['request'] += line
                                 continue
                             
 
@@ -290,7 +329,7 @@ def main():
                             #folders[title]['endpoints'][endpoint]['examples'][example_name]['response'] += line
                             #paths[path][method]["responses"]["200"]['examples'][example_name]['response'] += line
                             
-                            ###paths[path][method]["responses"]["200"]["content"]["application/json"]["examples"][example_name]['response'] += line
+                            paths[path][method]["responses"]["200"]["content"]["application/json"]["examples"][example_name]['response'] += line
                             continue
                         
                             
@@ -320,7 +359,8 @@ def main():
         open_oas = get_open_api_header()
         open_oas['paths'] = paths
         open_oas['tags'] = tags 
-        print(json.dumps(open_oas,indent=3))
+        #print(json.dumps(open_oas,indent=3))
+        return open_oas
 
                             
 def add_security(paths):
@@ -389,12 +429,87 @@ def getType(t):
     elif t == "uri":
         return "string"
 
-    if t not in ['array','string','integer','boolean','number','object']:
-        return 'string'
+    #if t not in ['array','string','integer','boolean','number','object']:
+    #    return 'string'
+    if "string" in t:
+        return "string"
     
     return t
-                                
-                
+
+def pdf_sort(items):
+    rows=[]
+    fuzzy=3
+
+    for item in items:
+        found=False
+        for  idx,row in enumerate(rows):
+
+            if item['box'][1] > (row['y'] - fuzzy) and item['box'][1] < (row['y']+fuzzy):
+                rows[idx]['items'].append(item)
+                found=True
+
+        if not found:
+            #creating a new row and assigned item to that row.
+            rows.append({'y':item["box"][1],"items":[item]})
+    
+    #This sorts the columns in each row by the X
+    for idx,row in enumerate(rows):
+        rows[idx]['items'] =  sorted(row['items'],key=lambda k: k['box'][0])
+
+    sorted_rows = sorted(rows,key=lambda k: k['y'],reverse=True)
+    return(sorted_rows)
+
+def change_options(options,num):
+    
+    change = 3
+    keys = ["line_overlap","char_margin","line_margin","word_margin","boxes_flow"]
+    
+
+    for x in range(num):
+        key_i = random.randint(0,len(keys)-1)
+        key_change = random.random()*change
+        if random.random()  > 0.5:
+            options[keys[key_i]] *= key_change
+        else:
+            options[keys[key_i]] /= key_change
+        
+        
+
+
+    return options
  
 if __name__=='__main__':
-    main()
+
+    print(json.dumps(main(),indent=3))
+    exit()
+    
+    random.seed(datetime.now())
+    
+
+    for x in range(1,4):
+        for i in range(x*1000):
+            options = {"line_overlap":0.5,
+                "char_margin":2.0,
+                "line_margin":0.5,
+                 "word_margin":0.1,
+                 "boxes_flow":0.50}
+
+
+            options = change_options(options,x)
+
+            laparams = LAParams( all_texts = True, **options)
+
+
+
+            result = main(laparams)
+            try:        
+                if len(result['paths']['/message']['get']['parameters']) > 3:
+                    print(options)
+                    pprint(result['paths']['/message']['get']['parameters'])
+                else:
+                    print("bad:"+str(options))
+            except:
+                pass
+
+
+
