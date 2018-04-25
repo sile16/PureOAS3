@@ -124,19 +124,11 @@ def main(laparams=None):
 
                     line = item['text']
                     
-            
-
-
                     if line.startswith("Resources") and item['font'] == "Arial,Bold" :
                         resource_found = True
                     
                     
-                    if resource_found:
-                        #count +=1
-                        #i#f count > 900:
-                        #    break
-                        
-                        
+                    if resource_found:                   
                         x_coordinate = item['box'][0]
                         #print line.encode('UTF-8')
                         #print '({}|{}|{}|{})'.format( c.fontname, c.size,type(c.size),tbox.bbox[0])
@@ -160,7 +152,9 @@ def main(laparams=None):
                             temp = line.split(" ")
                             method = temp[1].lower()
                             path = "/"+temp[2]
-                            paths[path] = { method : {"tags":[tag],
+                            if path not in paths:
+                                paths[path] = {}
+                            paths[path][method] = {"tags":[tag],
                                                       "description":"",
                                                       "operationId":method+path,
                                                       "responses": {
@@ -174,7 +168,7 @@ def main(laparams=None):
                                                            }
                                                        }  
                                                     }
-                                                }
+                                                
 
                             
 
@@ -186,6 +180,8 @@ def main(laparams=None):
                             
                             for path_id in re.findall(r'\{(.*?)\}',path):
                                 #adding in special path parameter volume/{volumeid}  example
+                                #add "Id" to the param name to avoid name conflicts according ot Oas 3 spec
+                                path_id += "Id"
                                 paths[path][method]['parameters'].append({"name":path_id,"in":"path","required":True,"schema":{"type":"string"}})
                                 param_index += 1
 
@@ -214,7 +210,7 @@ def main(laparams=None):
                             #folders[title]['endpoints'][endpoint]['examples'][example_name] = {"description":line,"request":"","response":""}
                             if 'examples' not in paths[path][method]["responses"]["200"]["content"]["application/json"]:
                                 paths[path][method]["responses"]["200"]["content"]["application/json"]["examples"]={}
-                            paths[path][method]["responses"]["200"]["content"]["application/json"]["examples"][example_name] = {"request":"","response":""}
+                            paths[path][method]["responses"]["200"]["content"]["application/json"]["examples"][example_name] = {"value":{"request":"","response":""}}
                             continue
                         
                         elif line.startswith("Request:"):
@@ -303,7 +299,8 @@ def main(laparams=None):
                                             paths[path][method]['parameters'][param_index]['description'] += line
                                         else:
                                             paths[path][method]['requestBody']['content']['application/json']['schema']['properties'][param_name]['description'] += line
-
+                        
+                        #end elif state.startswith("parameters"):
 
                         elif state.startswith("example_request"):
                             if state == "example_request":
@@ -312,7 +309,7 @@ def main(laparams=None):
                                 #folders[title]['endpoints'][endpoint]['examples'][example_name]['url'] = split[1]
                                 #folders[title]['endpoints'][endpoint]['examples'][example_name]['body'] = ""
                                 
-                                paths[path][method]["responses"]["200"]["content"]["application/json"]["examples"][example_name]['request'] += line
+                                paths[path][method]["responses"]["200"]["content"]["application/json"]["examples"][example_name]["value"]['request'] += line
                                 state="example_request_2"
                                 continue
                                 
@@ -321,34 +318,21 @@ def main(laparams=None):
                             else:
                                 #folders[title]['endpoints'][endpoint]['examples'][example_name]['body'] += line
                                 #paths[path][method]["responses"]["200"]['examples'][example_name]['request'] += line
-                                paths[path][method]["responses"]["200"]["content"]["application/json"]["examples"][example_name]['request'] += line
+                                paths[path][method]["responses"]["200"]["content"]["application/json"]["examples"][example_name]["value"]['request'] += line
                                 continue
+                            
+                    
                             
 
                         elif state == "example_response":
                             #folders[title]['endpoints'][endpoint]['examples'][example_name]['response'] += line
                             #paths[path][method]["responses"]["200"]['examples'][example_name]['response'] += line
                             
-                            paths[path][method]["responses"]["200"]["content"]["application/json"]["examples"][example_name]['response'] += line
+                            paths[path][method]["responses"]["200"]["content"]["application/json"]["examples"][example_name]["value"]['response'] += line
                             continue
+                            
                         
                             
-
-
-                                
-                            
-
-                            
-
-                        
-
-
-                    
-                        
-
-                        
-
-
                         
                         
 
@@ -366,60 +350,9 @@ def main(laparams=None):
 def add_security(paths):
     paths['/auth/session']['post']['responses']['200']['headers']={"Set-Cookie":{"schema":{"type":"string","example":"session=jlkdflaslfa8oijo;iifn4oainion"}}}
 
-                             
-                    
-                        
-
 def get_open_api_header():
-    return {
-    "openapi": "3.0.1",
-    "info": {
-        "title": "Pure FlashArray API",
-        "description": "# Introduction\nPure FlashArray API\n\n# Overview\nUse an API-Token to start a session, that returns an session cookie which expires in 30 minutes by default.\n\n# Authentication\nWhat is the preferred way of using the API?\n\n# Error Codes\nUse HTTP Response codes to determine command results.  Error message json formats can be different depending on the API Call. Use the CORS Everywhere FireFox extension to use this tool.",
-        "version": "1.13 (definition version 0.1)"
-    },
-    "servers": [
-        {
-            "url": "https://{hostname}/api/{APIVersion}/",
-            "variables": {
-                "hostname": {
-                    "description": "The dns FQDN or IP of the array",
-                    "default": "change-me"
-                },
-                "APIVersion": {
-                    "description": "",
-                    "default": "1.13"
-                }
-            }
-        },
-        {
-            "url": "https://{hostname}/api/",
-            "description":"Used ONLY for GET /api_version",
-            "variables": {
-                "hostname": {
-                    "description": "The dns FQDN or IP of the array",
-                    "default": "change-me2"
-                }
-                
-            }
-        }
-    ],
-    "security":
-     [
-         {"cookieAuth":[]}
-     ],
-     "components": {
-         "securitySchemes":{
-             "cookieAuth":{
-                 "type": "apiKey",
-                 "in": "cookie",
-                 "name":"session"
-             }
-         }
-     }
-    }
+    return json.load(open("template.json"))
     
-
 
 def getType(t):
     if t == "list":
@@ -428,6 +361,8 @@ def getType(t):
         return "integer"
     elif t == "uri":
         return "string"
+    elif t =="int":
+        return "integer"
 
     #if t not in ['array','string','integer','boolean','number','object']:
     #    return 'string'
@@ -438,12 +373,14 @@ def getType(t):
 
 def pdf_sort(items):
     rows=[]
+    #fuzzy matching rows by + or - their y coordinate, a new line is typically 20 ish points below
     fuzzy=3
 
     for item in items:
         found=False
-        for  idx,row in enumerate(rows):
 
+        #search all rows for one this item might belong to.
+        for  idx,row in enumerate(rows):
             if item['box'][1] > (row['y'] - fuzzy) and item['box'][1] < (row['y']+fuzzy):
                 rows[idx]['items'].append(item)
                 found=True
@@ -452,64 +389,16 @@ def pdf_sort(items):
             #creating a new row and assigned item to that row.
             rows.append({'y':item["box"][1],"items":[item]})
     
-    #This sorts the columns in each row by the X
+    #This sorts the columns in each row by the X value
     for idx,row in enumerate(rows):
         rows[idx]['items'] =  sorted(row['items'],key=lambda k: k['box'][0])
 
+    #this sorts all the rows by their y coordinate, in reverse order as 0,0 is bottom left of page and we want to read top down.
     sorted_rows = sorted(rows,key=lambda k: k['y'],reverse=True)
     return(sorted_rows)
 
-def change_options(options,num):
-    
-    change = 3
-    keys = ["line_overlap","char_margin","line_margin","word_margin","boxes_flow"]
-    
 
-    for x in range(num):
-        key_i = random.randint(0,len(keys)-1)
-        key_change = random.random()*change
-        if random.random()  > 0.5:
-            options[keys[key_i]] *= key_change
-        else:
-            options[keys[key_i]] /= key_change
-        
-        
-
-
-    return options
- 
 if __name__=='__main__':
 
     print(json.dumps(main(),indent=3))
     exit()
-    
-    random.seed(datetime.now())
-    
-
-    for x in range(1,4):
-        for i in range(x*1000):
-            options = {"line_overlap":0.5,
-                "char_margin":2.0,
-                "line_margin":0.5,
-                 "word_margin":0.1,
-                 "boxes_flow":0.50}
-
-
-            options = change_options(options,x)
-
-            laparams = LAParams( all_texts = True, **options)
-
-
-
-            result = main(laparams)
-            try:        
-                if len(result['paths']['/message']['get']['parameters']) > 3:
-                    print(options)
-                    pprint(result['paths']['/message']['get']['parameters'])
-                else:
-                    print("bad:"+str(options))
-            except:
-                pass
-
-
-
