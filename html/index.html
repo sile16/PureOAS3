@@ -30,6 +30,12 @@
   </head>
 
   <body>
+    <div>
+        <form action=/swagify method=post enctype=multipart/form-data>
+        <p><input type=file name=file>
+           <input type=submit value=Upload>
+      </form>
+    </div>
     <div id="swagger-ui"></div>
 
     <script src="./swagger-ui-bundle.js"> </script>
@@ -38,7 +44,7 @@
     window.onload = function() {
       // Build a system
       const ui = SwaggerUIBundle({
-        url: "http://petstore.swagger.io/v2/swagger.json",
+        url: "/swagger.json",
         dom_id: '#swagger-ui',
         deepLinking: true,
         presets: [
@@ -50,6 +56,8 @@
         ],
         layout: "StandaloneLayout"
       })
+
+      ui.fn.fetch.withCredentials = true
       window.ui = ui
     }
   </script>

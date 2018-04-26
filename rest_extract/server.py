@@ -1,7 +1,8 @@
 import os
 from flask import Flask, request, redirect, url_for
+import rest_extract
 
-UPLOAD_FOLDER = '/usr/share/nginx/html'
+UPLOAD_FOLDER = ''
 ALLOWED_EXTENSIONS = set(['pdf', 'json'])
 
 app = Flask(__name__)
@@ -24,19 +25,28 @@ def upload_file():
         if file.filename == '':
             flash('No selected file')
             return redirect(request.url)
+
         if file and allowed_file(file.filename):
             if "pdf" in file.filename:
                 filename = "rest.pdf"
             else:
                 filename = "swagger.json"
-            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-            return redirect(url_for('uploaded_file',filename=filename))
+
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            if os.path.exists(filepath):
+                os.remove(filepath)
             
+            
+            file.save(filepath)
+    
+            rest_extract.main()
+            return redirect(url_for('/',filename=filename))
+
     return '''
     <!doctype html>
     <title>Upload new File</title>
     <h1>Upload new File</h1>
-    <form method=post enctype=multipart/form-data>
+    <form action=/swagify method=post enctype=multipart/form-data>
       <p><input type=file name=file>
          <input type=submit value=Upload>
     </form>

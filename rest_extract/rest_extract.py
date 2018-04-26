@@ -60,8 +60,8 @@ class PdfMinerWrapper(object):
     def __exit__(self, _type, value, traceback):
         self.fp.close()
             
-def main(laparams=None):
-    with PdfMinerWrapper("REST_API_1.13.pdf",laparams) as doc:
+def main():
+    with PdfMinerWrapper("rest.pdf") as doc:
         
         resource_found = False
         machine = ["f","fd","e","ed",""]
@@ -82,11 +82,8 @@ def main(laparams=None):
 
         param_index=0
         tag_index=0
-
         path_id=""
-        
 
-        count=0
         for page in doc:     
             #print 'Page no.', page.pageid, 'Size',  (page.height, page.width)
             if page.pageid == 74:
@@ -181,7 +178,7 @@ def main(laparams=None):
                             for path_id in re.findall(r'\{(.*?)\}',path):
                                 #adding in special path parameter volume/{volumeid}  example
                                 #add "Id" to the param name to avoid name conflicts according ot Oas 3 spec
-                                path_id += "Id"
+                                #path_id += "Id"
                                 paths[path][method]['parameters'].append({"name":path_id,"in":"path","required":True,"schema":{"type":"string"}})
                                 param_index += 1
 
@@ -344,6 +341,8 @@ def main(laparams=None):
         open_oas['paths'] = paths
         open_oas['tags'] = tags 
         #print(json.dumps(open_oas,indent=3))
+        with open('swagger.json','w') as outfile:
+            json.dump(open_oas,outfile)
         return open_oas
 
                             
@@ -398,7 +397,5 @@ def pdf_sort(items):
     return(sorted_rows)
 
 
-if __name__=='__main__':
-
-    print(json.dumps(main(),indent=3))
-    exit()
+if __name__=='__main__':   
+    main()

@@ -1,6 +1,6 @@
-FROM alpine:3.5
+FROM python:3-alpine3.7
 
-LABEL maintainer="fehguy"
+LABEL maintainer="sile16"
 
 ENV VERSION "v2.2.10"
 ENV FOLDER "swagger-ui-2.2.10"
@@ -13,22 +13,38 @@ ENV OAUTH_REALM "**None**"
 ENV OAUTH_APP_NAME "**None**"
 ENV OAUTH_ADDITIONAL_PARAMS "**None**"
 ENV SWAGGER_JSON "/app/swagger.json"
-ENV PORT 8080
+ENV PORT 80
 ENV BASE_URL ""
 
-RUN apk add --update nginx
+RUN apk update --no-cache && apk upgrade --no-cache && apk add --update --no-cache \
+    git \
+    nginx
+
 RUN mkdir -p /run/nginx
 
+
+#Get latest swagger-ui
+RUN mkdir -p /usr/share/nginx/html
+RUN git clone https://github.com/swagger-api/swagger-ui.git /swagger-ui && \
+     mv /swagger-ui/dist/* /usr/share/nginx/html/    && \
+     mv /swagger-ui/docker-run.sh /usr/share/nginx && \
+     rm -rf /swagger-ui
+
+
+
+RUN apk add --no-cache --update build-base && \
+    pip install --no-cache-dir pdfminer.six && \
+    apk del build-base
+
+ADD rest_extract /usr/share/nginx/
+RUN pip install --no-cache-dir -r /usr/share/nginx/requirements.txt
+
+#this should overwrite the index.html provided in the cloned swagger-ui from master.
 COPY nginx.conf /etc/nginx/
+COPY html/index.html /usr/share/nginx/html/
+COPY docker-run.sh /usr/share/nginx/
 
-RUN apk update && apk upgrade && \
-    apk add --no-cache bash git openssh
-
-# copy swagger files to the `/js` folder
-ADD ./dist/* /usr/share/nginx/html/
-ADD ./docker-run.sh /usr/share/nginx/
-
-EXPOSE 8080
+EXPOSE 80
 
 CMD ["sh", "/usr/share/nginx/docker-run.sh"]
 
