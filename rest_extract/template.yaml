@@ -14,6 +14,33 @@ info:
 
     # Error Codes
     Use HTTP Response codes to determine command results.  Error message json formats can be different depending on the API Call. Use the CORS Everywhere FireFox extension to use this tool.
+
+    # Best practices
+
+    # "Try it Out" Below
+
+    ## CORS
+    The Try will NOT work without a [CORS](https://en.wikipedia.org/wiki/Cross-origin_resource_sharing) bypass. \
+    For Firefox [CORS Everywhere](https://addons.mozilla.org/en-US/firefox/addon/cors-everywhere/) \ 
+    For Chrome [Moesif CORS](https://chrome.google.com/webstore/detail/moesif-origin-cors-change/digfbfaphojjndkpccljibejjbppifbc?hl=en-US) worked once for me but then stopped working... \
+    
+    Try It Out **WILL NOT** work without a CORS bypass plugin. 
+
+    ## IP
+    Next, put in your Array IP where it says change me below.  
+
+    ## Accept Security Certificate
+    Open your array IP in a new tab and accept the security certificate and ensure you can reach it's IP/hostname.
+
+    ## Test connectivity
+    Test /api_version  - If this fails retry the steps above. 
+
+    ## Authenticate 
+    Use POST ../auth/session , and put in your API Key.  (to get API Key, you can do POST ../auth/apitoken with your user/pass) \
+    This will re
+    Then you can do any other API call
+
+
 paths:
   /api_version:
     get:
@@ -21,18 +48,14 @@ paths:
       responses:
         200:
           description: "List supported API versions"
+      tags: [API]
 servers:
 - url: https://{hostname}/api/
   description: Your FlashArray IP/Hostname
   variables:
     hostname:
       description: The FQDN or IP of the array
-      default: change-me2
-security:
-- cookieAuth: []
-components:
-  securitySchemes:
-    cookieAuth:
-      type: apiKey
-      in: cookie
-      name: session
+      default: change-me
+tags:
+- {description: List APIs, name: API}
+  

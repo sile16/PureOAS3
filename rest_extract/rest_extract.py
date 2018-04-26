@@ -16,8 +16,9 @@ import yaml
 baseDir = "/usr/share/nginx/"
 webRoot = baseDir + "html/"
 
-webRoot = ""
-baseDir = ""
+##uncomment below to run in CWD instead of hardcoded docker container directories.
+#webRoot = ""
+#baseDir = ""
 
 class PdfMinerWrapper(object):
     """
@@ -80,12 +81,12 @@ def main():
 
         open_oas = get_open_api_header()
         
-
+        
         paths = open_oas['paths']
         path=""
         
         example_name=""
-        tags=[]
+        tags = open_oas['tags']
         tag=""
 
         param_index=0
