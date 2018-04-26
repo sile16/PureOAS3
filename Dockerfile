@@ -43,7 +43,6 @@ RUN pip install --no-cache-dir -r /usr/share/nginx/requirements.txt
 COPY nginx.conf /etc/nginx/
 COPY html/index.html /usr/share/nginx/html/
 COPY docker-run.sh /usr/share/nginx/
-RUN rm -rf /etc/nginx/conf.d
 
 EXPOSE 80
 
