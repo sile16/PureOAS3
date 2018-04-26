@@ -2,11 +2,12 @@ import os
 from flask import Flask, request, redirect, url_for
 import rest_extract
 
-UPLOAD_FOLDER = ''
+UPLOAD_FOLDER = '/usr/share/nginx/html'
 ALLOWED_EXTENSIONS = set(['pdf', 'json'])
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['MAX_CONTENT_LENGTH'] = 32 * 1024 * 1024
 
 def allowed_file(filename):
     return '.' in filename and \
@@ -40,7 +41,7 @@ def upload_file():
             file.save(filepath)
     
             rest_extract.main()
-            return redirect(url_for('/',filename=filename))
+            return redirect('/')
 
     return '''
     <!doctype html>
@@ -51,3 +52,6 @@ def upload_file():
          <input type=submit value=Upload>
     </form>
     '''
+
+if __name__ == "__main__":
+    app.run(host='0.0.0.0')

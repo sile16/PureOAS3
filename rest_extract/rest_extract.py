@@ -12,6 +12,9 @@ import json
 import random
 from datetime import datetime
 
+baseDir = "/usr/share/nginx/"
+webRoot = baseDir + "html/"
+
 
 class PdfMinerWrapper(object):
     """
@@ -61,7 +64,7 @@ class PdfMinerWrapper(object):
         self.fp.close()
             
 def main():
-    with PdfMinerWrapper("rest.pdf") as doc:
+    with PdfMinerWrapper(webRoot+"rest.pdf") as doc:
         
         resource_found = False
         machine = ["f","fd","e","ed",""]
@@ -341,7 +344,7 @@ def main():
         open_oas['paths'] = paths
         open_oas['tags'] = tags 
         #print(json.dumps(open_oas,indent=3))
-        with open('swagger.json','w') as outfile:
+        with open(webRoot+'swagger.json','w') as outfile:
             json.dump(open_oas,outfile)
         return open_oas
 
@@ -350,7 +353,7 @@ def add_security(paths):
     paths['/auth/session']['post']['responses']['200']['headers']={"Set-Cookie":{"schema":{"type":"string","example":"session=jlkdflaslfa8oijo;iifn4oainion"}}}
 
 def get_open_api_header():
-    return json.load(open("template.json"))
+    return json.load(open(baseDir+"template.json"))
     
 
 def getType(t):
