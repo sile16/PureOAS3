@@ -11,10 +11,13 @@ from pprint import pprint
 import json
 import random
 from datetime import datetime
+import yaml
 
 baseDir = "/usr/share/nginx/"
 webRoot = baseDir + "html/"
 
+webRoot = ""
+baseDir = ""
 
 class PdfMinerWrapper(object):
     """
@@ -75,8 +78,10 @@ def main():
         x_coordinate = 0.0 #The distance from left edge of page
         middle_x=0.0
 
+        open_oas = get_open_api_header()
+        
 
-        paths = {}
+        paths = open_oas['paths']
         path=""
         
         example_name=""
@@ -86,11 +91,12 @@ def main():
         param_index=0
         tag_index=0
         path_id=""
+        version=""
 
         for page in doc:     
             #print 'Page no.', page.pageid, 'Size',  (page.height, page.width)
-            if page.pageid == 74:
-                pass
+       
+                
 
             items=[]
             for tbox in page:
@@ -123,6 +129,10 @@ def main():
                 for item in row['items']:
 
                     line = item['text']
+                    if page.pageid == 1 and version == "":
+                        version = "/" + line.split(" ")[2] + "/"
+                        
+
                     
                     if line.startswith("Resources") and item['font'] == "Arial,Bold" :
                         resource_found = True
@@ -151,7 +161,7 @@ def main():
                             tag_index +=1
                             temp = line.split(" ")
                             method = temp[1].lower()
-                            path = "/"+temp[2]
+                            path = version+temp[2]
                             if path not in paths:
                                 paths[path] = {}
                             paths[path][method] = {"tags":[tag],
@@ -339,13 +349,16 @@ def main():
         #end pages
 
         #apply_fixes(paths)
+        
 
-        open_oas = get_open_api_header()
+        open_oas["info"]["version"] = version
         open_oas['paths'] = paths
         open_oas['tags'] = tags 
         #print(json.dumps(open_oas,indent=3))
         with open(webRoot+'swagger.json','w') as outfile:
             json.dump(open_oas,outfile)
+        with open(webRoot+"swagger.yaml","w") as outfile:
+            yaml.dump(open_oas,outfile)
         return open_oas
 
                             
@@ -353,7 +366,8 @@ def add_security(paths):
     paths['/auth/session']['post']['responses']['200']['headers']={"Set-Cookie":{"schema":{"type":"string","example":"session=jlkdflaslfa8oijo;iifn4oainion"}}}
 
 def get_open_api_header():
-    return json.load(open(baseDir+"template.json"))
+    with open(baseDir+"template.yaml") as f:
+        return yaml.safe_load(f)
     
 
 def getType(t):

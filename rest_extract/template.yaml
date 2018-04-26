@@ -1,0 +1,38 @@
+---
+openapi: 3.0.1
+info:
+  title: Pure FlashArray API
+  description: |-
+    # Introduction
+    Pure FlashArray API
+
+    # Overview
+    Use an API-Token to start a session, that returns an session cookie which expires in 30 minutes by default.
+
+    # Authentication
+    What is the preferred way of using the API?
+
+    # Error Codes
+    Use HTTP Response codes to determine command results.  Error message json formats can be different depending on the API Call. Use the CORS Everywhere FireFox extension to use this tool.
+paths:
+  /api_version:
+    get:
+      description: Lists supported API versions on this array.
+      responses:
+        200:
+          description: "List supported API versions"
+servers:
+- url: https://{hostname}/api/
+  description: Your FlashArray IP/Hostname
+  variables:
+    hostname:
+      description: The FQDN or IP of the array
+      default: change-me2
+security:
+- cookieAuth: []
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: session

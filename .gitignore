@@ -1,1 +1,5 @@
 REST_API*
+__pycache__
+rest_extract/swagger.json
+rest_extract/swagger.yaml
+rest_extract/rest.pdf
