@@ -31,10 +31,9 @@
 
   <body>
     <div>
-        <p>Download a <a href="https://support.purestorage.com/FlashArray/PurityFA/Purity_FA_REST_API/Reference/REST_API_PDF_Reference_Guides" target="_blank">REST pdf from Pure Support</a>, choose the file i.e. REST_API_1.13.pdf, then click Upload using button below.</p>
-        <form action=/swagify method=post enctype=multipart/form-data>
-        <p><input type=file name=file>
-           <input type=submit value=Upload>
+        <p>Download a <a href="https://support.purestorage.com/FlashArray/PurityFA/Purity_FA_REST_API/Reference/REST_API_PDF_Reference_Guides" target="_blank">REST pdf from Pure Support</a>, choose the file i.e. REST_API_1.13.pdf, then wait a bit for it to convert.
+        <form id="uploadform" action=/swagify method=post enctype=multipart/form-data>
+        <p><input type=file name=file id="fileid">
       </form>
     </div>
     <div id="swagger-ui"></div>
@@ -42,6 +41,11 @@
     <script src="./swagger-ui-bundle.js"> </script>
     <script src="./swagger-ui-standalone-preset.js"> </script>
     <script>
+    
+    document.getElementById("fileid").onchange = function() {
+        document.getElementById("uploadform").submit();
+    };
+
     window.onload = function() {
       // Build a system
       const ui = SwaggerUIBundle({
