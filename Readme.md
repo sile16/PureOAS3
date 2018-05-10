@@ -2,8 +2,9 @@ This is a tool that converts the Pure FlashArray API pdf documentation into an i
 
 
 Try It:
-docker run -it --rm -p 80:5000 sile16/pureswagger ; sleep 1; python -mwebbrowser http://127.0.0.1
+docker run -it --rm -p 80:5000 sile16/pureswagger 
+
+Then open your browser to http://127.0.0.1 (use firefox to enable real time API calls!)
 
 To stop run:
-
 just ctrl^c on the console
