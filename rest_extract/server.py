@@ -1,17 +1,25 @@
 import os
-from flask import Flask, request, redirect, url_for
+from flask import Flask, request, redirect, url_for, send_from_directory, flash
 import rest_extract
 
-UPLOAD_FOLDER = '/usr/share/nginx/html'
+ROOT_DIR = '/usr/share/pureswagger/html'
 ALLOWED_EXTENSIONS = set(['pdf', 'json'])
 
 app = Flask(__name__)
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['UPLOAD_FOLDER'] = ROOT_DIR
 app.config['MAX_CONTENT_LENGTH'] = 32 * 1024 * 1024
 
 def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+@app.route('/')
+def root():
+  return send_from_directory(ROOT_DIR,"index.html")
+
+@app.route('/<path:file>')
+def get_file(file):
+    return send_from_directory(ROOT_DIR,file)
 
 @app.route('/swagify', methods=['GET', 'POST'])
 def upload_file():
@@ -52,6 +60,19 @@ def upload_file():
          <input type=submit value=Upload>
     </form>
     '''
+
+@app.after_request
+def add_header(r):
+    """
+    Add headers to both force latest IE rendering engine or Chrome Frame,
+    and also to cache the rendered page for 10 minutes.
+    """
+    r.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    r.headers["Pragma"] = "no-cache"
+    r.headers["Expires"] = "0"
+    r.headers['Cache-Control'] = 'public, max-age=0'
+    return r
+
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0')

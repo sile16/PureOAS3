@@ -19,10 +19,11 @@ info:
 
     ## CORS
     The Try will NOT work without a [CORS](https://en.wikipedia.org/wiki/Cross-origin_resource_sharing) bypass. \
+    The ONLY browser that works reliable is firefox.  If you want the Try it out to work, please use firefox.
     For Firefox [CORS Everywhere](https://addons.mozilla.org/en-US/firefox/addon/cors-everywhere/) \ 
-    For Chrome [Moesif CORS](https://chrome.google.com/webstore/detail/moesif-origin-cors-change/digfbfaphojjndkpccljibejjbppifbc?hl=en-US) worked once for me but then stopped working... \
     
-    Try It Out **WILL NOT** work without a CORS bypass plugin. 
+    Try It Out **WILL NOT** work without a CORS bypass plugin.  (If anyone can get chrome to work please let me know and I'll include those instructions. 
+    I have not been able to find any extension that works to bypass CORS on Chrome.) 
 
     ## IP
     Next, put in your Array IP where it says change me below.  

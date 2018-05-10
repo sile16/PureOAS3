@@ -15,7 +15,7 @@ import yaml
 from genson import SchemaBuilder
 from collections import OrderedDict
 
-baseDir = "/usr/share/nginx/"
+baseDir = "/usr/share/pureswagger/"
 webRoot = baseDir + "html/"
 
 ##uncomment below to run in CWD instead of hardcoded docker container directories.
@@ -104,7 +104,6 @@ def main():
         
         example = OrderedDict()
         examples = OrderedDict()
-        examples_index = 0
         tags = open_oas['tags']
         tag=""
 
