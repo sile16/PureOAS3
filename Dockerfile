@@ -36,8 +36,10 @@ RUN apk add --no-cache --update build-base && \
     pip install --no-cache-dir pdfminer.six && \
     apk del build-base
 
-ADD rest_extract /usr/share/nginx/
+ADD rest_extract/requirements.txt /usr/share/nginx/
 RUN pip install --no-cache-dir -r /usr/share/nginx/requirements.txt
+ADD rest_extract /usr/share/nginx/
+
 
 #this should overwrite the index.html provided in the cloned swagger-ui from master.
 COPY nginx.conf /etc/nginx/

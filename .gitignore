@@ -1,5 +1,3 @@
-REST_API*
-__pycache__
-rest_extract/swagger.json
-rest_extract/swagger.yaml
-rest_extract/rest.pdf
+output.json
+debug.json
+REST_API_1.13.pdf

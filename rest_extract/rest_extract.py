@@ -12,6 +12,8 @@ import json
 import random
 from datetime import datetime
 import yaml
+from genson import SchemaBuilder
+from collections import OrderedDict
 
 baseDir = "/usr/share/nginx/"
 webRoot = baseDir + "html/"
@@ -66,6 +68,19 @@ class PdfMinerWrapper(object):
     
     def __exit__(self, _type, value, traceback):
         self.fp.close()
+
+
+def format_examples(examples):
+    out=""
+    for example in examples:
+        out += example['name']
+        out += "<br>URL: {}<br>".format(example['request']['url'])
+        out += "Body:<br>{}".format(example['request']['body'])
+        out += "<br>Response:{}<br><br>".format(example['response'])
+    
+    return out
+
+
             
 def main():
     with PdfMinerWrapper(webRoot+"rest.pdf") as doc:
@@ -81,11 +96,15 @@ def main():
 
         open_oas = get_open_api_header()
         
-        
+
         paths = open_oas['paths']
         path=""
+
+        components = open_oas['components']
         
-        example_name=""
+        example = OrderedDict()
+        examples = OrderedDict()
+        examples_index = 0
         tags = open_oas['tags']
         tag=""
 
@@ -93,6 +112,7 @@ def main():
         tag_index=0
         path_id=""
         version=""
+        example=None
 
         for page in doc:     
             #print 'Page no.', page.pageid, 'Size',  (page.height, page.width)
@@ -129,11 +149,12 @@ def main():
             for row in sorted_items:
                 for item in row['items']:
 
+
+                    #### First Pass at changing state + initialization @ state change
+
                     line = item['text']
                     if page.pageid == 1 and version == "":
                         version = "/" + line.split(" ")[2] + "/"
-                        
-
                     
                     if line.startswith("Resources") and item['font'] == "Arial,Bold" :
                         resource_found = True
@@ -150,6 +171,7 @@ def main():
                             tag = line.split(" ")[1]
                             tags.append({"name":tag,"description":""})
                             tag_index = len(tags)-1
+
                             
                             
                             state="fd"
@@ -172,7 +194,8 @@ def main():
                                                            '200':{
                                                                "content":{
                                                                    "application/json":{
-                                                                       "schema":{}
+                                                                       "schema":{
+                                                                       }
                                                                    }
                                                                },
                                                                "description":""
@@ -182,22 +205,21 @@ def main():
                                                 
 
                             
-
+                            examples = OrderedDict()
                             param_index=0
                             if method=="get" or method == "delete" or "{" in path:
+                                #Params go in parameters... see below for POST
+                                #need to do this before to initilize the parameters dict
                                 paths[path][method]['parameters'] = []
                             
                             #Need to create path param for each {id1} .. {id2} in path
-                            
                             for path_id in re.findall(r'\{(.*?)\}',path):
                                 #adding in special path parameter volume/{volumeid}  example
-                                #add "Id" to the param name to avoid name conflicts according ot Oas 3 spec
-                                #path_id += "Id"
                                 paths[path][method]['parameters'].append({"name":path_id,"in":"path","required":True,"schema":{"type":"string"}})
                                 param_index += 1
 
                             if not method=="get" and not method=="delete" :
-                                #paths[path][method]['requestBody'] = {'content':{"application/json":{"schema":{"properties":{}}}}}
+                                #Params go in RequestBody for POST
                                 paths[path][method]['requestBody'] = {'content':{"application/json":{"schema":{"properties":{},"type":"object"}}}}
 
                             state="ed"
@@ -209,19 +231,18 @@ def main():
                             continue
 
                         elif line.startswith("Parameter"):
-                            
                             state="parameters"
-                                
                             continue
 
                         elif line.startswith("Example "):
                             state="example"
-                            #split = line.split()
                             example_name = line
-                            #folders[title]['endpoints'][endpoint]['examples'][example_name] = {"description":line,"request":"","response":""}
-                            if 'examples' not in paths[path][method]["responses"]["200"]["content"]["application/json"]:
-                                paths[path][method]["responses"]["200"]["content"]["application/json"]["examples"]={}
-                            paths[path][method]["responses"]["200"]["content"]["application/json"]["examples"][example_name] = {"value":{"request":"","response":""}}
+                            example = {}
+                            
+                            #create examples dict if it doesnt' exist
+                            #if 'examples' not in paths[path][method]["responses"]["200"]["content"]["application/json"]:
+                            #    paths[path][method]["responses"]["200"]["content"]["application/json"]["examples"]={}
+                            #paths[path][method]["responses"]["200"]["content"]["application/json"]["examples"][example_name] = {"value":{"request":"","response":""}}
                             continue
                         
                         elif line.startswith("Request:"):
@@ -232,10 +253,8 @@ def main():
                             state="example_response"
                             continue
                         
-
-                        
-                        
-
+                        ############################################################################################
+                        #### second pass, processing items in our current state
                         
                         if state == "fd":
                             tags[tag_index]['description'] += line
@@ -251,6 +270,7 @@ def main():
                             if state == "parameters_3":
                                 if x_coordinate < middle_x:
                                     #this means we wrapped around and are now on a new param.
+                                    #the x coordinate is now left of that last text box we processed
                                     state = "parameters"
                                     param_index +=1
 
@@ -258,13 +278,10 @@ def main():
                                 #first param
                                 param_name = line
                                 if param_name != "None":
-                                    #folders[title]['endpoints'][endpoint]['params'][param_name] = {"description":"",'required':None}
                                     if  method == "get" or  method == "delete":
                                         paths[path][method]['parameters'].append({"in":"query","name":param_name,"description":"","schema":{}})
 
                                     else :
-                                        #paths[path][method]['requestBody'] = {'content':{"application/json":{"schema":{"properties":{},"type":"object","required":[]}}}}
-                                        #paths[path][method]['requestBody'] = {'content':{"application/json":{"schema":{"properties":{},"type":"object","required":[]}}}}
                                         paths[path][method]['requestBody']['content']['application/json']['schema']['properties'][param_name] = {"description":""}
                                         
 
@@ -315,31 +332,74 @@ def main():
 
                         elif state.startswith("example_request"):
                             if state == "example_request":
-                                #split = line.split()
-                                #folders[title]['endpoints'][endpoint]['examples'][example_name]['method'] = split[0]
-                                #folders[title]['endpoints'][endpoint]['examples'][example_name]['url'] = split[1]
-                                #folders[title]['endpoints'][endpoint]['examples'][example_name]['body'] = ""
-                                
-                                paths[path][method]["responses"]["200"]["content"]["application/json"]["examples"][example_name]["value"]['request'] += line
+                                #Process first line of example
+                                split = line.split()
+                                example['request'] = OrderedDict()
+                                example['request']['method'] = split[0]
+                                example['request']['url'] = split[1]
+                                example['request']['body'] = ""
+                                example['response'] = ""
+
                                 state="example_request_2"
                                 continue
                                 
-                                #paths[path][method]["responses"]["200"]['examples'][example_name]['request'] += line
                                 
-                            else:
-                                #folders[title]['endpoints'][endpoint]['examples'][example_name]['body'] += line
-                                #paths[path][method]["responses"]["200"]['examples'][example_name]['request'] += line
-                                paths[path][method]["responses"]["200"]["content"]["application/json"]["examples"][example_name]["value"]['request'] += line
+                                
+                            elif state == "example_request_2":
+                                #body of request
+                                example['request']['body'] += line
+                                try:
+                                    json.loads(example['request']['body'])
+                                    example['request']['body'] = json.loads(example['request']['body'])
+                                except :
+                                    #we are still reading in the example, lets continue to the next line
+                                    continue
                                 continue
-                            
-                    
-                            
+                                     
 
                         elif state == "example_response":
                             #folders[title]['endpoints'][endpoint]['examples'][example_name]['response'] += line
                             #paths[path][method]["responses"]["200"]['examples'][example_name]['response'] += line
                             
-                            paths[path][method]["responses"]["200"]["content"]["application/json"]["examples"][example_name]["value"]['response'] += line
+                            #paths[path][method]["responses"]["200"]["content"]["application/json"]["examples"][example_name]["value"]['response'] += line
+                            response_obj = None
+                            if "..." not in line:
+                                example['response'] += line
+                            try:
+                                response_obj = json.loads(example['response'])
+                                example['response'] = json.loads(example['response'])
+                            except :
+                                #we are still reading in the example, lets continue to the next line
+                                continue
+
+                            #this means we have valid json and reached end of response example.
+                            #we can do our end of example processing here.
+                            
+                            #builder = SchemaBuilder()
+                            #builder.add_schema({"type":"object","properties":{}})
+                            #builder.add_object(response_obj)
+
+                            
+                            
+                            schema_name = (method+path+"Examples").replace("/","_")
+                            paths[path][method]["responses"]["200"]["content"]["application/json"]["schema"]["$ref"] = "#/components/schemas/"+schema_name
+
+                            examples[example_name] = example
+
+                            try:
+                                #components['schemas'][schema_name] = builder.to_schema()
+                                #forget trying to build an actual schema for the example... just put a placeholder schema in.
+                                components['schemas'][schema_name] = {"properties":{"ex1":{"type":"object"}}}
+                            except:
+                                print("Unexpected error:", sys.exc_info()[0])
+                                print("failed to parse schema")
+                                
+                                pprint(response_obj)
+                                raise
+
+                            #now add in our example
+                            components['schemas'][schema_name]["example"] = examples
+                            state = "done_with_example"
                             continue
                             
                         
@@ -369,7 +429,6 @@ def add_security(paths):
 def get_open_api_header():
     with open(baseDir+"template.yaml") as f:
         return yaml.safe_load(f)
-    
 
 def getType(t):
     if t == "list":
