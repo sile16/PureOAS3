@@ -18,7 +18,7 @@ just ctrl^c on the console docker container
 
 ## Screenshots
 
-### Documention in collapsable easy to read format
+### Documentation in collapsable easy to read format
 ![docs](https://raw.githubusercontent.com/sile16/pureswagger/master/images/docs.png)
 
 ### See detailed paramater information
