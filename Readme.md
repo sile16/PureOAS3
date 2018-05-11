@@ -14,3 +14,14 @@ That's it!
 
 ## To stop run:
 just ctrl^c on the console docker container 
+
+
+## Screenshots
+
+### Documention in collapsable easy to read format
+![abc](https://raw.githubusercontent.com/sile16/pureswagger/master/images/pureswagger_docs.png)
+
+### See detailed paramater information
+![](https://raw.githubusercontent.com/sile16/pureswagger/master/images/pureswagger_array_details.png)
+
+
