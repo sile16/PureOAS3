@@ -9,7 +9,6 @@ import re
 from string import digits
 from pprint import pprint
 import json
-import random
 from datetime import datetime
 import yaml
 from genson import SchemaBuilder

@@ -35,8 +35,8 @@ info:
 
     ## Authenticate 
     Use POST ../auth/session , and put in your API Key.  (to get API Key, you can do POST ../auth/apitoken with your user/pass) \
-    This will re
-    Then you can do any other API call
+    This will return your API key, or you can get it from the Web UI.  After doing a POST ../auth/session, the array returns \
+    a cookie which is handled by the browser which enables additional API calls.  Session cookies expire by default after 30 minutes.
 
     
 servers:
