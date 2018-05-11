@@ -12,7 +12,6 @@ ENV OAUTH_REALM "**None**"
 ENV OAUTH_APP_NAME "**None**"
 ENV OAUTH_ADDITIONAL_PARAMS "**None**"
 ENV SWAGGER_JSON "/app/swagger.json"
-ENV PORT 80
 ENV BASE_URL ""
 
 RUN apk update --no-cache && apk upgrade --no-cache && apk add --update --no-cache \
@@ -42,7 +41,7 @@ ADD rest_extract /usr/share/pureswagger/
 COPY html/index.html /usr/share/pureswagger/html/
 COPY docker-run.sh /usr/share/pureswagger/
 
-EXPOSE 80
+EXPOSE 5000
 
 CMD ["sh", "/usr/share/pureswagger/docker-run.sh"]
 
