@@ -1,10 +1,11 @@
 # Pure FA Swagger Generator
 
-This is a tool that converts the Pure FlashArray API pdf documentation into an interactive Swagger UI.  This lets your browse the API documentation in a convient format and even execute API calls interactively directly to a FlashArray!
+This is a tool that converts the Pure FlashArray API pdf documentation into an interactive Swagger UI.  This lets you browse the API documentation in a convienent format and even execute API calls interactively directly to a FlashArray!
 
 
 ## Try It: 
 Requires [docker](https://docs.docker.com/install/) to be installed
+
 > docker run -it --rm -p 80:5000 sile16/pureswagger 
 
 Then open your browser to http://127.0.0.1 (use firefox to enable real time API calls!)
@@ -41,7 +42,7 @@ just ctrl^c on the console docker container
 In order to send API calls to an array you must 
 1.  Have a FlashArray
 2.  Use Firefox
-2.  Follow the instructions to enabled CORS bypass and accept TLS certificate.
+3.  Follow the instructions to enabled CORS bypass and accept TLS certificate.
 
 
 
