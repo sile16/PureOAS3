@@ -19,9 +19,30 @@ just ctrl^c on the console docker container
 ## Screenshots
 
 ### Documention in collapsable easy to read format
-![abc](https://raw.githubusercontent.com/sile16/pureswagger/master/images/pureswagger_docs.png)
+![docs](https://raw.githubusercontent.com/sile16/pureswagger/master/images/docs.png)
 
 ### See detailed paramater information
-![](https://raw.githubusercontent.com/sile16/pureswagger/master/images/pureswagger_array_details.png)
+![array_details](https://raw.githubusercontent.com/sile16/pureswagger/master/images/array_details.png)
+
+### Every Endpoint is documented !
+![array_details](https://raw.githubusercontent.com/sile16/pureswagger/master/images/list_of_endpoints.png)
+
+### Actually send API commands to an Array:
+![array_details](https://raw.githubusercontent.com/sile16/pureswagger/master/images/list_api.png)
+
+### Start a session:
+![array_details](https://raw.githubusercontent.com/sile16/pureswagger/master/images/start_session.png)
+
+### Get Controller Info:
+![array_details](https://raw.githubusercontent.com/sile16/pureswagger/master/images/get_controllers.png)
+
+## Notes:
+
+In order to send API calls to an array you must 
+1.  Have a FlashArray
+2.  Use Firefox
+2.  Follow the instructions to enabled CORS bypass and accept TLS certificate.
+
+
 
 
