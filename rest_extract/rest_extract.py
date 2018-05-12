@@ -12,7 +12,6 @@ import json
 from datetime import datetime
 import yaml
 from genson import SchemaBuilder
-from collections import OrderedDict
 
 baseDir = "/usr/share/pureswagger/"
 webRoot = baseDir + "html/"
@@ -101,8 +100,8 @@ def main():
 
         components = open_oas['components']
         
-        example = OrderedDict()
-        examples = OrderedDict()
+        example = {}
+        examples = {}
         tags = open_oas['tags']
         tag=""
 
@@ -163,6 +162,9 @@ def main():
                         #print line.encode('UTF-8')
                         #print '({}|{}|{}|{})'.format( c.fontname, c.size,type(c.size),tbox.bbox[0])
 
+                        if 'PUT array' in line:
+                            pass
+
                         if re.match(r"^[0-9]+\. ",line):
                             #Match section identifiers
                             # i.e.  1. Authentication
@@ -203,7 +205,7 @@ def main():
                                                 
 
                             
-                            examples = OrderedDict()
+                            examples = {}
                             param_index=0
                             if method=="get" or method == "delete" or "{" in path:
                                 #Params go in parameters... see below for POST
@@ -217,7 +219,7 @@ def main():
                                 param_index += 1
 
                             if not method=="get" and not method=="delete" :
-                                #Params go in RequestBody for POST
+                                #Params go in RequestBody for POST & PUT
                                 paths[path][method]['requestBody'] = {'content':{"application/json":{"schema":{"properties":{},"type":"object"}}}}
 
                             state="ed"
@@ -297,8 +299,13 @@ def main():
                                     #folders[title]['endpoints'][endpoint]['params'][param_name]['type'] = line
                                     if  method == "get" or  method == "delete":
                                         paths[path][method]['parameters'][param_index]['schema']['type']= getType(line)
+                                        if getType(line) == "array":
+                                            paths[path][method]['parameters'][param_index]['schema']['items'] = {"type":"object"}
+
                                     else:
                                         paths[path][method]['requestBody']['content']['application/json']['schema']['properties'][param_name]['type'] = getType(line)
+                                        if getType(line) == "array":
+                                            paths[path][method]['requestBody']['content']['application/json']['schema']['properties'][param_name]['items'] = {"type":"object"}
 
                                 state = "parameters_3"
                                 middle_x = x_coordinate
@@ -332,7 +339,7 @@ def main():
                             if state == "example_request":
                                 #Process first line of example
                                 split = line.split()
-                                example['request'] = OrderedDict()
+                                example['request'] = {}
                                 example['request']['method'] = split[0]
                                 example['request']['url'] = split[1]
                                 example['request']['body'] = ""
