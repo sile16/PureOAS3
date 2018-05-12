@@ -25,6 +25,9 @@ just ctrl^c on the console docker container
 ### See detailed paramater information
 ![array_details](https://raw.githubusercontent.com/sile16/pureswagger/master/images/array_details.png)
 
+### See body param documentation
+![array_details](https://raw.githubusercontent.com/sile16/pureswagger/master/images/body_params.png)
+
 ### Every Endpoint is documented !
 ![array_details](https://raw.githubusercontent.com/sile16/pureswagger/master/images/list_of_endpoints.png)
 
