@@ -1,6 +1,12 @@
 import os
-from flask import Flask, request, redirect, url_for, send_from_directory, flash
+from flask import Flask, request, redirect, url_for, send_from_directory, flash, Response
 import rest_extract
+import requests
+import urllib3
+from urllib import parse
+
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
 
 ROOT_DIR = '/usr/share/pureswagger/html'
 ALLOWED_EXTENSIONS = set(['pdf', 'json'])
@@ -17,7 +23,50 @@ def allowed_file(filename):
 def root():
   return send_from_directory(ROOT_DIR,"index.html")
 
-@app.route('/<path:file>')
+def print_request(req):
+    print( 'HTTP/1.1 {method} {url}\n{headers}\n\n{body}'.format(
+        method=req.method,
+        url=req.url,
+        headers='\n'.join('{}: {}'.format(k, v) for k, v in req.headers.items()),
+        body=req.body))
+
+def print_response(res):
+    print('HTTP/1.1 {status_code}\n{headers}\n\n{body}'.format(
+        status_code=res.status_code,
+        headers='\n'.join('{}: {}'.format(k, v) for k, v in res.headers.items()),
+        body=res.content,
+    ))
+
+#Proxy API calls to the array to bypass CORS
+@app.route('/api', defaults={'path': ''}, methods=['GET', 'PUT','POST','DELETE','OPTIONS','HEAD'])
+@app.route("/api/<path:path>", methods=['GET', 'PUT','POST','DELETE','OPTIONS','HEAD'])
+def proxy_to_fa(*args, **kwargs):
+    if "flasharray" not in request.cookies or request.cookies["flasharray"] == "change-me":
+        return "Error: Please set FlashArray IP / Hostname at top of page before making API Calls"
+
+    url = parse.urlparse(request.url)
+    url = url._replace(scheme="https",netloc=request.cookies["flasharray"])   
+    
+    resp = requests.request(
+        str(request.method),
+        url.geturl(),
+        headers={key: value for (key, value) in request.headers if key != 'Host'},
+        data=request.get_data(),
+        cookies=request.cookies,
+        allow_redirects=False,
+        verify=False)
+    print ("flask request: {}".format(request.method))
+    
+    print_request(resp.request)
+    print_response(resp)
+
+    excluded_headers = ['content-encoding', 'content-length', 'transfer-encoding', 'connection']
+    headers = [(name, value) for (name, value) in resp.raw.headers.items()
+               if name.lower() not in excluded_headers]
+
+    return Response(resp.content, resp.status_code, headers)
+
+@app.route('/<path:file>/')
 def get_file(file):
     return send_from_directory(ROOT_DIR,file)
 
@@ -63,10 +112,6 @@ def upload_file():
 
 @app.after_request
 def add_header(r):
-    """
-    Add headers to both force latest IE rendering engine or Chrome Frame,
-    and also to cache the rendered page for 10 minutes.
-    """
     r.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
     r.headers["Pragma"] = "no-cache"
     r.headers["Expires"] = "0"

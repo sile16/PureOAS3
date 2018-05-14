@@ -110,9 +110,14 @@ def main():
         path_id=""
         version=""
         example=None
+        start_page=1
+        total_pages=120
 
+        print("Parsing Rest API...")
         for page in doc:     
             #print 'Page no.', page.pageid, 'Size',  (page.height, page.width)
+            if resource_found:
+                print("{:.0f} Percent Complete".format((page.pageid-start_page)/total_pages*100),end='\r')
        
                 
 
@@ -154,10 +159,12 @@ def main():
                         version = "/" + line.split(" ")[2] + "/"
                     
                     if line.startswith("Resources") and item['font'] == "Arial,Bold" :
+                        start_page = page.pageid
                         resource_found = True
                     
                     
-                    if resource_found:                   
+                    if resource_found:
+                            
                         x_coordinate = item['box'][0]
                         #print line.encode('UTF-8')
                         #print '({}|{}|{}|{})'.format( c.fontname, c.size,type(c.size),tbox.bbox[0])
@@ -415,6 +422,7 @@ def main():
         #end pages
 
         #apply_fixes(paths)
+        print("Finished parsing API...")
         
 
         open_oas["info"]["version"] = version
